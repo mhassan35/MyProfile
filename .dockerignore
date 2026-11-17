@@ -1,0 +1,17 @@
+.git
+.vercel
+.env
+.env.*
+!.env.example
+node_modules
+vendor
+public/build
+public/hot
+bootstrap/ssr
+storage/logs
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+tests
+phpunit.xml
+*.log

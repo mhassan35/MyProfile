@@ -1,0 +1,52 @@
+FROM php:8.3-cli-bookworm
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libicu-dev \
+        libonig-dev \
+        libsqlite3-dev \
+        libzip-dev \
+    && docker-php-ext-install -j"$(nproc)" \
+        bcmath \
+        intl \
+        mbstring \
+        pdo_sqlite \
+        zip \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22-bookworm-slim /usr/local/bin/npm /usr/local/bin/npm
+COPY --from=node:22-bookworm-slim /usr/local/bin/npx /usr/local/bin/npx
+COPY --from=node:22-bookworm-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+
+WORKDIR /var/www/html
+
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-progress \
+    --no-scripts \
+    --no-autoloader \
+    --prefer-dist
+
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+COPY . .
+
+RUN composer dump-autoload --no-dev --no-interaction --optimize \
+    && npm run build
+
+ENV APP_ENV=production \
+    APP_DEBUG=false \
+    CACHE_STORE=array \
+    LARAVEL_STORAGE_PATH=/tmp/laravel-storage \
+    LOG_CHANNEL=stderr \
+    QUEUE_CONNECTION=sync \
+    SESSION_DRIVER=cookie
+
+EXPOSE 80
+
+CMD ["sh", "-c", "mkdir -p \"$LARAVEL_STORAGE_PATH/framework/cache/data\" \"$LARAVEL_STORAGE_PATH/framework/sessions\" \"$LARAVEL_STORAGE_PATH/framework/views\" \"$LARAVEL_STORAGE_PATH/logs\" && exec php artisan serve --host=0.0.0.0 --port=\"${PORT:-80}\""]

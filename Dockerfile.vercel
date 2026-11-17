@@ -30,7 +30,13 @@ RUN composer install \
 
 COPY . .
 
-RUN composer dump-autoload --no-dev --no-interaction --optimize \
+RUN mkdir -p \
+        bootstrap/cache \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+    && composer dump-autoload --no-dev --no-interaction --optimize \
     && php artisan wayfinder:generate --with-form
 
 FROM node:22-bookworm-slim AS assets

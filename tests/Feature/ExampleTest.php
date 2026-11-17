@@ -2,17 +2,18 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    use RefreshDatabase;
-
-    public function test_returns_a_successful_response()
+    public function test_public_portfolio_pages_do_not_require_a_database(): void
     {
-        $response = $this->get(route('home'));
+        config([
+            'database.connections.sqlite.database' => sys_get_temp_dir().DIRECTORY_SEPARATOR.'portfolio-no-database-'.bin2hex(random_bytes(8)).'.sqlite',
+            'session.driver' => 'cookie',
+        ]);
 
-        $response->assertOk();
+        $this->get(route('home'))->assertOk();
+        $this->get(route('work'))->assertOk();
     }
 }
